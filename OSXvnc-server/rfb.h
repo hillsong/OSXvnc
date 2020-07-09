@@ -46,6 +46,8 @@
 #include "CoreGraphics/CGGeometry.h"
 #include "CoreGraphics/CGDirectDisplay.h"
 
+#include <IOKit/pwr_mgt/IOPMLib.h>
+
 #define MAX_ENCODINGS 17
 
 /*
@@ -605,6 +607,7 @@ extern void rfbPrintStats(rfbClientPtr cl);
 
 extern Bool rfbNoDimming;
 extern Bool rfbNoSleep;
+extern IOPMAssertionID userActivityLastAssertionId;
 
 extern int rfbDimmingInit(void);
 extern int rfbUndim(void);

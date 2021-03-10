@@ -67,6 +67,7 @@ Bool rfbDisableRemote = FALSE;
 Bool rfbDisableRichClipboards = FALSE;
 Bool rfbRemapShortcuts = FALSE;
 BOOL rfbShouldSendUpdates = TRUE;
+BOOL rfbHideServerCursorWhenConnected = FALSE;
 BOOL registered = FALSE;
 BOOL restartOnUserSwitch = FALSE;
 BOOL useIP4 = TRUE;
@@ -770,7 +771,8 @@ static void usage(void) {
         "-littleEndian          Force little-endian mode (INTEL)\n"
         "                       (default: detect)\n"
 
-        "-display DisplayID     displayID to indicate which display to serve\n",
+        "-display DisplayID     displayID to indicate which display to serve\n"
+        "-hideServerCursor      Hide the cursor on the server when clients are connected\n",
         rfbDeferUpdateTime,
         rfbProtocolMajorVersion, rfbProtocolMinorVersion
     );
@@ -961,6 +963,8 @@ static void processArguments(int argc, char *argv[]) {
             logEnable = FALSE;
         } else if (strcmp(argv[i], "-useopengl") == 0) {
             rfbLog("OpenGL no longer supported");
+        } else if (strcmp(argv[i], "-hideServerCursor") == 0) {
+            rfbHideServerCursorWhenConnected = TRUE;
         }
     }
 
@@ -1217,7 +1221,7 @@ int main(int argc, char *argv[]) {
             if (rfbClientsConnected()) {
                 // SAUCE: The cursor is automatically restored if moved over the Dock
                 // Make sure it is hidden every `cursorVisibilityRefreshInterval` seconds
-                Bool shouldSyncCursorVisibility = 0 == lastCursorVisibilitySync;
+                Bool shouldSyncCursorVisibility = rfbHideServerCursorWhenConnected && 0 == lastCursorVisibilitySync;
                 if (lastCursorVisibilitySync > 0) {
                     uint64_t nsElapsed = (mach_absolute_time() - lastCursorVisibilitySync) * timebaseInfo.numer / timebaseInfo.denom;
                     shouldSyncCursorVisibility = 1.0 * nsElapsed / NSEC_PER_SEC >= 0.5;
@@ -1227,8 +1231,10 @@ int main(int argc, char *argv[]) {
                     lastCursorVisibilitySync = mach_absolute_time();
                 }
             } else {
-                // Show the cursor back if no clients are connected
-                rfbSetCursorVisibility(TRUE);
+                if(rfbHideServerCursorWhenConnected) {
+                    // Show the cursor back if no clients are connected
+                    rfbSetCursorVisibility(TRUE);
+                }
                 // No Clients - go into hibernation
                 pthread_mutex_lock(&listenerAccepting);
 
